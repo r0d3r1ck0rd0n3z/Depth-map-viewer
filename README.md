@@ -11,5 +11,11 @@ Creates a 3D parallax effect from images that have depth map data embedded.
 
 ## Codepen
 
-Live codepen here: <br>
+Edit codepen here: <br>
 https://codepen.io/r0d3r1ck0rd0n3z/pen/eYxPbEv
+<br>
+
+
+## Live Demo
+View demo here: <br>
+https://r0d3r1ck0rd0n3z.github.io/Depth-map-viewer/

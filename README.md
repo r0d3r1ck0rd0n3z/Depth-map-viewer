@@ -10,7 +10,7 @@ Creates a 3D parallax effect from images that have depth map data embedded.
 
 ## Image requirements
 
-Requires only one image. However, image must have an embedded depth map. iPhone images taken in portrait mode [will already have the depth map data](https://developer.apple.com/documentation/avfoundation/additional_data_capture/capturing_photos_with_depth) embedded. For Android, the *Google Camera* app can take pictures with depth data via the *Lens Blur* feature. See links below for more info: 
+Requires only one image but only works for images with an embedded depth map. iPhone images taken in portrait mode [will already have the depth map data](https://developer.apple.com/documentation/avfoundation/additional_data_capture/capturing_photos_with_depth) embedded. For Android, the *Google Camera* app can take pictures with depth data via the *Lens Blur* feature. However, note that the *Lens Blur* feature is only available for selected phones. See links below for more info: 
 
 * [Tutorial on the lens blur feature for Google camera app (Android)](https://www.youtube.com/watch?v=GmpmhvVlklc)
 * [Google Camera Lens Blur Mode](https://www.youtube.com/watch?v=_CqXbX4i240)

@@ -1,0 +1,205 @@
+<html>
+  <head>
+    <title>Depth Map Viewer</title>
+    <script src='https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js'></script>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.3.0/pixi.min.js'></script>
+    <style>
+      html,
+body {
+  overflow-y: scroll;
+}
+
+.details,
+#main {
+  display: flex;
+  flex: auto;
+  justify-content: center;
+}
+
+.details img {
+  width: 200px;
+}
+
+summary {
+  cursor: pointer;
+}
+
+#base {
+  width: 100%;
+}
+
+#main > div {
+  width: 45%;
+  margin-right: 5px;
+}
+
+small {
+  display:block;
+  margin-left: 30px;
+}
+
+#test_app {
+  width: 100%;
+  height: 100%;
+}
+    </style>
+  </head>
+  <body>
+    <h1>exifr.js + pixi.js</h1>
+
+<div id="main">
+  <div class="box">
+    <h3>Base image</h3><img src="https://i.ibb.co/VQHHhp0/IMG-20231127-074418.jpg" id="base" />
+  </div>
+  <div class="box">
+    <h3>Base + depth</h3>
+    <div id="test_app"></div>
+  </div>
+</div>
+
+<small>
+  <p>
+    Use https://github.com/MikeKovarik/exifr to extract EXIF data on page load <br>
+    Use https://github.com/pixijs/pixijs to create the 3D box <br>
+    To change sample image, edit pen and replace the SRC with your own URL <br>
+    Note that some image services will strip EXIF data during upload <br>
+  </p>
+</small>
+
+<details>
+  <summary> Extracted depth data</summary>
+
+  <div class="details">
+
+    <div class="box">
+      <h3>Original</h3>
+      <img src="" id="binary" />
+    </div>
+    <div class="box">
+      <h3>Depth map</h3>
+      <img id="depth-map">
+    </div>
+    <div class="box">
+      <h3>Raw source</h3>
+      <img id="depth-source">
+    </div>
+
+  </div>
+
+</details>
+
+<br><br>
+<br><br>
+
+<!-- SCRIPTS START BELOW -->
+
+
+<script>
+const baseImage = document.getElementById("base")
+const isBrowser = typeof navigator === 'object'
+const options   = {
+	tiff: false,        // We don't need TIFF, nor thumbnail, so skip this segment (enabled by default).
+	xmp: true,          // Depth map is stored in an XMP Extended segment (not the main one).
+	multiSegment: true, // Tell exifr not to stop at the first XMP segment, but to find them all.
+	mergeOutput: false	// Mutliple XMP namespaces (GDepth, GImage) have similar properties (Mime, Data).
+  };	                // We don't want them to overwrite each other.
+
+// exifr.js function to display extracted images in browser
+async function displayInBrowser(xmpNamespace, id) {
+	let base64 = xmpNamespace.Data
+	let mime   = xmpNamespace.Mime
+	let img    = document.querySelector('#' + id)
+	img.src    = `data:${mime};base64,${base64}`
+  };
+
+// exifr.js function to extract depth data as image files
+async function extractDepthMap(filePath) {
+	let output = await exifr.parse(filePath, options)
+	if (output && output.GDepth) {
+		log('The file contains depth map')
+		log('GDepth.Format', output.GDepth.Format)
+		log('GDepth.Near', output.GDepth.Near)
+		log('GDepth.Far', output.GDepth.Far)
+		log('GDepth.Mime', output.GDepth.Mime)
+		// store or display the depth map image
+		displayInBrowser(output.GDepth, 'depth-map')
+	  } else {
+      log('The file has no depth map')
+      return
+      }
+	// Besides depth map, there can be original image with no blurring applied.
+	// NOTE: GImage can be also used for "the other eye" in VR photos
+	if (output && output.GImage) {
+		log('The file contains unmodified original photo')
+		log('GImage.Mime', output.GImage.Mime)
+		// store or display the source image
+		displayInBrowser(output.GImage, 'depth-source')
+    let xDepth = 'data:' + output.GDepth.Mime + ';base64,' + output.GDepth.Data
+    let xImage = 'data:' + output.GImage.Mime + ';base64,' + output.GImage.Data
+    render3Dbox( xDepth, xImage )
+    } else {
+      log(`The file doesn't contain unmodified image`)
+      }
+};
+
+// Function to show logs on the console
+function log(...args) { console.log(...args) };
+
+// Use PIXI.js function to generate 3d box from depth data
+function render3Dbox( xDepth, xImage ) {
+  const IMG_SOURCE   = window.getComputedStyle(baseImage)
+  const IMG_WIDTH    = IMG_SOURCE.width.replace('px','' ) * 1     // width of generated canvas
+  const IMG_HEIGHT   = IMG_SOURCE.height.replace('px','') * 1     // height of generated canvas
+  const SCALE_FACTOR = 25;     // depth applied to image
+
+  const app = new PIXI.Application({
+    width:  IMG_WIDTH, 
+    height: IMG_HEIGHT
+    })
+
+  const container = document.getElementById("test_app")
+  container.appendChild(app.view)
+
+  const img  = new PIXI.Sprite.from(xImage)
+  img.width  = IMG_WIDTH
+  img.height = IMG_HEIGHT
+  app.stage.addChild(img)
+
+  depthMap = new PIXI.Sprite.from(xDepth)
+  depthMap.width  = IMG_WIDTH
+  depthMap.height = IMG_HEIGHT
+  app.stage.addChild(depthMap)
+
+  displacementFilter = new PIXI.filters.DisplacementFilter(depthMap)
+  app.stage.filters  = [displacementFilter]
+
+  container.addEventListener("mousemove", (e) => {
+    displacementFilter.scale.x = (IMG_WIDTH  / 2 - e.clientX) / SCALE_FACTOR
+    displacementFilter.scale.y = (IMG_HEIGHT / 2 - e.clientY) / SCALE_FACTOR
+    })  
+ 
+// const testApp = document.querySelector("#test_app canvas") 
+// testApp.removeAttribute("height")
+// testApp.removeAttribute("width")
+  
+  
+};
+
+
+
+// Finally, get URL of base image to start extraction of depth map
+// Convert to blob to bypass issues with CORS
+fetch(baseImage.src)
+  .then(response => response.blob())
+  .then(blob => {
+    const url = URL.createObjectURL(blob)
+    document.getElementById("binary").src = url
+    extractDepthMap(url)
+    });
+
+
+// ~~~~~~ END ~~~~~~ 
+    </script>
+    
+  </body>
+</html>

@@ -98,42 +98,42 @@ small {
 const baseImage = document.getElementById("base")
 const isBrowser = typeof navigator === 'object'
 const options   = {
-	tiff: false,        // We don't need TIFF, nor thumbnail, so skip this segment (enabled by default).
-	xmp: true,          // Depth map is stored in an XMP Extended segment (not the main one).
-	multiSegment: true, // Tell exifr not to stop at the first XMP segment, but to find them all.
-	mergeOutput: false	// Mutliple XMP namespaces (GDepth, GImage) have similar properties (Mime, Data).
-  };	                // We don't want them to overwrite each other.
+    tiff: false,          // We don't need TIFF, nor thumbnail, so skip this segment (enabled by default).
+    xmp: true,            // Depth map is stored in an XMP Extended segment (not the main one).
+    multiSegment: true,   // Tell exifr not to stop at the first XMP segment, but to find them all.
+    mergeOutput: false    // Mutliple XMP namespaces (GDepth, GImage) have similar properties (Mime, Data).
+  };                      // We don't want them to overwrite each other.
 
 // exifr.js function to display extracted images in browser
 async function displayInBrowser(xmpNamespace, id) {
-	let base64 = xmpNamespace.Data
-	let mime   = xmpNamespace.Mime
-	let img    = document.querySelector('#' + id)
-	img.src    = `data:${mime};base64,${base64}`
+    let base64 = xmpNamespace.Data
+    let mime   = xmpNamespace.Mime
+    let img    = document.querySelector('#' + id)
+    img.src    = `data:${mime};base64,${base64}`
   };
 
 // exifr.js function to extract depth data as image files
 async function extractDepthMap(filePath) {
-	let output = await exifr.parse(filePath, options)
-	if (output && output.GDepth) {
-		log('The file contains depth map')
-		log('GDepth.Format', output.GDepth.Format)
-		log('GDepth.Near', output.GDepth.Near)
-		log('GDepth.Far', output.GDepth.Far)
-		log('GDepth.Mime', output.GDepth.Mime)
-		// store or display the depth map image
-		displayInBrowser(output.GDepth, 'depth-map')
-	  } else {
+    let output = await exifr.parse(filePath, options)
+    if (output && output.GDepth) {
+        log('The file contains depth map')
+        log('GDepth.Format', output.GDepth.Format)
+        log('GDepth.Near', output.GDepth.Near)
+        log('GDepth.Far', output.GDepth.Far)
+        log('GDepth.Mime', output.GDepth.Mime)
+        // store or display the depth map image
+        displayInBrowser(output.GDepth, 'depth-map')
+      } else {
       log('The file has no depth map')
       return
       }
-	// Besides depth map, there can be original image with no blurring applied.
-	// NOTE: GImage can be also used for "the other eye" in VR photos
-	if (output && output.GImage) {
-		log('The file contains unmodified original photo')
-		log('GImage.Mime', output.GImage.Mime)
-		// store or display the source image
-		displayInBrowser(output.GImage, 'depth-source')
+    // Besides depth map, there can be original image with no blurring applied.
+    // NOTE: GImage can be also used for "the other eye" in VR photos
+    if (output && output.GImage) {
+        log('The file contains unmodified original photo')
+        log('GImage.Mime', output.GImage.Mime)
+        // store or display the source image
+        displayInBrowser(output.GImage, 'depth-source')
     let xDepth = 'data:' + output.GDepth.Mime + ';base64,' + output.GDepth.Data
     let xImage = 'data:' + output.GImage.Mime + ';base64,' + output.GImage.Data
     render3Dbox( xDepth, xImage )
